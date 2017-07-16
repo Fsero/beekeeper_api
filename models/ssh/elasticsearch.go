@@ -1,9 +1,11 @@
 package models
 
 import (
+	"context"
 	"time"
 
 	"github.com/Sirupsen/logrus"
+	"github.com/astaxie/beego"
 
 	elastic "gopkg.in/olivere/elastic.v5"
 )
@@ -63,4 +65,36 @@ func (e *ElasticOutputClient) Init() error {
 	}
 	e.client = client
 	return nil
+}
+
+func (e *ElasticOutputClient) Search(index string, pageSize int, query *elastic.BoolQuery) (*elastic.SearchResult, error) {
+	var searchResult *elastic.SearchResult
+	var err error
+	e.url = beego.AppConfig.String("elasticsearchurl")
+	err = e.Init()
+	if err != nil {
+		logrus.Fatalf("Unable to initialize ES client %s", err)
+	}
+	if query == nil {
+		searchResult, err = e.client.Search().
+			Index(index).              // search in index "twitter"
+			Sort("@timestamp", false). // sort by "user" field, ascending
+			From(0).Size(pageSize).    // take documents 0-9
+			Pretty(true).              // pretty print request and response JSON
+			Do(context.Background())   // execute
+	} else {
+		searchResult, err = e.client.Search().
+			Index(index). // search in index "twitter"
+			Query(query).
+			Sort("@timestamp", false). // sort by "user" field, ascending
+			From(0).Size(pageSize).    // take documents 0-9
+			Pretty(true).              // pretty print request and response JSON
+			Do(context.Background())   // execute
+	}
+
+	if err != nil {
+		logrus.Errorf("[Search] unable to search in Elasticsearch %s", err)
+		return nil, err
+	}
+	return searchResult, err
 }

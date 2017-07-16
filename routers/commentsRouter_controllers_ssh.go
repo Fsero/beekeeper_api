@@ -43,13 +43,6 @@ func init() {
 
 	beego.GlobalControllerRouter["bitbucket.org/fseros/beekeeper_api/controllers/ssh:IncidentController"] = append(beego.GlobalControllerRouter["bitbucket.org/fseros/beekeeper_api/controllers/ssh:IncidentController"],
 		beego.ControllerComments{
-			Method: "Get",
-			Router: `/:timestamp`,
-			AllowHTTPMethods: []string{"get"},
-			Params: nil})
-
-	beego.GlobalControllerRouter["bitbucket.org/fseros/beekeeper_api/controllers/ssh:IncidentController"] = append(beego.GlobalControllerRouter["bitbucket.org/fseros/beekeeper_api/controllers/ssh:IncidentController"],
-		beego.ControllerComments{
 			Method: "GetAll",
 			Router: `/`,
 			AllowHTTPMethods: []string{"get"},

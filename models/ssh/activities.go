@@ -1,7 +1,6 @@
 package models
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -22,42 +21,7 @@ func (a ByUnixTimeActivities) Less(i, j int) bool {
 
 }
 
-func GetActivities(ContainerId string, probeName string, timestamp string) (activities []attackerActivityDoc, err error) {
-	var e ElasticOutputClient
-	e.url = beego.AppConfig.String("elasticsearchurl")
-	err = e.Init()
-	if err != nil {
-		logrus.Fatalf("Unable to initializa ES client %s", err)
-	}
-	// Search with a term query
-	termQuery := elastic.NewTermQuery("containerid", ContainerId)
-	probeQuery := elastic.NewTermQuery("probe_name", probeName)
-
-	query := elastic.NewBoolQuery()
-
-	d1 := elastic.NewRangeQuery("@timestamp")
-	i, err := strconv.Atoi(timestamp)
-	if err != nil {
-		logrus.Fatal(err)
-	}
-	d1.From(i)
-
-	d1.To(i + 600000)
-	query = query.Must(termQuery).Must(probeQuery).Must(d1)
-
-	fmt.Println(query)
-	searchResult, err := e.client.Search().
-		Index("ssh_activities"). // search in index "twitter"
-		Query(query).
-		Sort("@timestamp", true). // sort by "user" field, ascending
-		From(0).Size(10).         // take documents 0-9
-		Pretty(true).             // pretty print request and response JSON
-		Do(context.Background())  // execute
-	if err != nil {
-		// Handle error
-		panic(err)
-	}
-
+func getActivities(searchResult *elastic.SearchResult) (activities []attackerActivityDoc, err error) {
 	// searchResult is of type SearchResult and returns hits, suggestions,
 	// and all kinds of other information from Elasticsearch.
 	//fmt.Printf("Query took %d milliseconds\n", searchResult.TookInMillis)
@@ -103,4 +67,30 @@ func GetActivities(ContainerId string, probeName string, timestamp string) (acti
 	}
 
 	return nil, errors.New("ObjectId Not Exist")
+}
+
+func GetActivities(ContainerId string, probeName string, timestamp string) (activities []attackerActivityDoc, err error) {
+	var e ElasticOutputClient
+	e.url = beego.AppConfig.String("elasticsearchurl")
+	err = e.Init()
+	if err != nil {
+		logrus.Fatalf("Unable to initializa ES client %s", err)
+	}
+	// Search with a term query
+	termQuery := elastic.NewTermQuery("containerid", ContainerId)
+	probeQuery := elastic.NewTermQuery("probe_name", probeName)
+
+	query := elastic.NewBoolQuery()
+
+	d1 := elastic.NewRangeQuery("@timestamp")
+	i, err := strconv.Atoi(timestamp)
+	if err != nil {
+		logrus.Fatal(err)
+	}
+	d1.From(i)
+	d1.To(i + 600000)
+	query = query.Must(termQuery).Must(probeQuery).Must(d1)
+	searchResult, err := e.Search("ssh_activities", 30, query)
+	activities, err = getActivities(searchResult)
+	return activities, err
 }

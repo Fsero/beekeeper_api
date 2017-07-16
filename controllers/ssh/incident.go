@@ -1,9 +1,12 @@
 package controllers
 
 import (
+	"fmt"
 	"sort"
 
 	"bitbucket.org/fseros/beekeeper_api/models/ssh"
+
+	"time"
 
 	"github.com/astaxie/beego"
 )
@@ -32,11 +35,12 @@ type IncidentController struct {
 // @Param	IncidentId		path 	string	true		"the objectid you want to get"
 // @Success 200 {object} models.Object
 // @Failure 403 :objectId is empty
-// @router /:timestamp [get]
+// @router /:from [get]
+
 func (o *IncidentController) Get() {
 	timestamp := o.Ctx.Input.Param(":timestamp")
 	if timestamp != "" {
-		ob, err := models.GetIncident(timestamp)
+		ob, err := models.GetIncident(time.Now(), time.Now())
 		if err != nil {
 			o.Data["json"] = err.Error()
 		} else {
@@ -52,17 +56,24 @@ func (o *IncidentController) Get() {
 // @Failure 403 :objectId is empty
 // @router / [get]
 func (o *IncidentController) GetAll() {
-	obs := models.GetAllIncidents()
-	var keys []string
-	for k := range obs {
-		keys = append(keys, k)
+	obs, err := models.GetAllIncidents()
+	if err == nil {
+		var keys []string
+		for k := range obs {
+			keys = append(keys, k)
+		}
+		sort.Sort(sort.Reverse(sort.StringSlice(keys)))
+		var values []models.Incident
+		values = make([]models.Incident, 0)
+		for _, k := range keys {
+			values = append(values, *(obs[k]))
+		}
+		o.Data["json"] = values
+		o.ServeJSON()
+	} else {
+		o.Data["json"] = fmt.Sprintf("{ 'msg': '%s' }", err.Error())
+		o.Ctx.Output.SetStatus(500)
+		o.ServeJSON()
+		o.StopRun()
 	}
-	sort.Sort(sort.Reverse(sort.StringSlice(keys)))
-	var values []models.Incident
-	values = make([]models.Incident, 0)
-	for _, k := range keys {
-		values = append(values, *(obs[k]))
-	}
-	o.Data["json"] = values
-	o.ServeJSON()
 }
