@@ -44,13 +44,23 @@ type Alert struct {
 	Timestamp time.Time `json:"time"`
 }
 
-func GetIncident(from time.Time, to time.Time) (map[string]*Incident, error) {
-	return nil, nil
+func GetIncident(from time.Time, to time.Time, size int) (map[string]*Incident, error) {
+	var e ElasticOutputClient
+	query := elastic.NewBoolQuery()
+	d1 := elastic.NewRangeQuery("@timestamp")
+	d1.From(from)
+	d1.To(to)
+	query = query.Must(d1)
+	searchResult, err := e.Search("alerts-*", size, query)
+	Incidents, err := getIncidents(searchResult)
+	logrus.Debugf("[GetAllIncidents] %d incidents found \n", len(Incidents))
+	return Incidents, err
 }
 
 func getIncidents(searchResult *elastic.SearchResult) (map[string]*Incident, error) {
 	Incidents = make(map[string]*Incident, 0)
 	if searchResult.Hits.TotalHits > 0 {
+		logrus.Infof("[getIncidents] found %d incidents", searchResult.Hits.TotalHits)
 		for _, hit := range searchResult.Hits.Hits {
 			var t alertDoc
 			err := json.Unmarshal(*hit.Source, &t)
@@ -96,7 +106,7 @@ func getIncidents(searchResult *elastic.SearchResult) (map[string]*Incident, err
 				}
 
 				if err == nil {
-					inc := Incident{Activities: activities, Triggered: t.Message, ID: fmt.Sprintf("%s-%d000", probe.Provider, alert.Timestamp.Unix()), StartedAt: alert.Timestamp, FinishedAt: lastSeen, Provider: Provider{Provider: probe.Provider, Country: probe.Country}, Offenders: offenders}
+					inc := Incident{Activities: activities, Triggered: t.Message, ID: fmt.Sprintf("%d000-%s", alert.Timestamp.Unix(), probe.Provider), StartedAt: alert.Timestamp, FinishedAt: lastSeen, Provider: Provider{Provider: probe.Provider, Country: probe.Country}, Offenders: offenders}
 					logrus.Debugf("[getIncidents] adding incident %+v", inc)
 					Incidents[inc.ID] = &inc
 				}
@@ -106,9 +116,9 @@ func getIncidents(searchResult *elastic.SearchResult) (map[string]*Incident, err
 	return Incidents, nil
 }
 
-func GetAllIncidents() (map[string]*Incident, error) {
+func GetAllIncidents(size int) (map[string]*Incident, error) {
 	var e ElasticOutputClient
-	searchResult, err := e.Search("alerts-*", 30, nil)
+	searchResult, err := e.Search("alerts-*", size, nil)
 	Incidents, err := getIncidents(searchResult)
 	logrus.Debugf("[GetAllIncidents] %d incidents found \n", len(Incidents))
 	return Incidents, err

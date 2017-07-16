@@ -1,0 +1,13 @@
+package: bitbucket.org/fseros/beekeeper_api
+import:
+- package: github.com/Sirupsen/logrus
+  version: ~1.0.2
+- package: github.com/astaxie/beego
+  version: ~1.8.3
+- package: gopkg.in/olivere/elastic.v5
+  version: ~5.0.41
+testImport:
+- package: github.com/smartystreets/goconvey
+  version: ~1.6.2
+  subpackages:
+  - convey

@@ -79,9 +79,7 @@ func GetActivities(ContainerId string, probeName string, timestamp string) (acti
 	// Search with a term query
 	termQuery := elastic.NewTermQuery("containerid", ContainerId)
 	probeQuery := elastic.NewTermQuery("probe_name", probeName)
-
 	query := elastic.NewBoolQuery()
-
 	d1 := elastic.NewRangeQuery("@timestamp")
 	i, err := strconv.Atoi(timestamp)
 	if err != nil {
