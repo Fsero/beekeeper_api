@@ -8,19 +8,33 @@ import (
 	"strconv"
 
 	"github.com/Sirupsen/logrus"
+	"github.com/astaxie/beego"
 	elastic "gopkg.in/olivere/elastic.v5"
 )
 
-func GetOffenders(ContainerId string, timestamp string) (activities []attackerLoginAttemptDoc, err error) {
+type ByUnixTimeOffenders []attackerLoginAttemptDoc
+
+func (a ByUnixTimeOffenders) Len() int      { return len(a) }
+func (a ByUnixTimeOffenders) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
+func (a ByUnixTimeOffenders) Less(i, j int) bool {
+
+	return a[i].Timestamp.Before(a[j].Timestamp)
+
+}
+
+func GetOffenders(ContainerId string, probeName string, timestamp string) (activities []attackerLoginAttemptDoc, err error) {
 	var e ElasticOutputClient
-	e.url = "http://main01.superprivyhosting.com:9200"
+	e.url = beego.AppConfig.String("elasticsearchurl")
 	err = e.Init()
 	if err != nil {
 		logrus.Fatalf("Unable to initializa ES client %s", err)
 	}
 	// Search with a term query
 	termQuery := elastic.NewTermQuery("containerid", ContainerId)
+	probeQuery := elastic.NewTermQuery("probe_name", probeName)
 	successQuery := elastic.NewTermQuery("successful", true)
+
+	query := elastic.NewBoolQuery()
 
 	//dateQuery := elastic.NewTermQuery("@timestamp", timestamp)
 
@@ -33,16 +47,15 @@ func GetOffenders(ContainerId string, timestamp string) (activities []attackerLo
 
 	d1.To(i + 600000)
 	//d1 = d1.Lte(timestamp)
-	d2 := elastic.NewBoolQuery()
-	d2.Must(successQuery)
-	d2.Must(d1)
+	query = query.Must(termQuery).Must(probeQuery).Must(successQuery).Must(d1)
 
 	//d2 := elastic.NewRangeQuery("%s+10m")
 
 	searchResult, err := e.client.Search().
 		Index("ssh_login_attempts"). // search in index "twitter"
-		Query(termQuery).
-		Query(d2).
+		Query(query).
+		//Query(probeQuery).
+		//Query(d2).
 		//Query(d2).
 		//Query(dateQuery).         // specify the query
 		Sort("@timestamp", true). // sort by "user" field, ascending

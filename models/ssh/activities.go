@@ -5,26 +5,50 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 
 	"github.com/Sirupsen/logrus"
+	"github.com/astaxie/beego"
 	elastic "gopkg.in/olivere/elastic.v5"
 )
 
-func GetActivities(ContainerId string, timestamp string) (activities []attackerActivityDoc, err error) {
+type ByUnixTimeActivities []attackerActivityDoc
+
+func (a ByUnixTimeActivities) Len() int      { return len(a) }
+func (a ByUnixTimeActivities) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
+func (a ByUnixTimeActivities) Less(i, j int) bool {
+
+	return a[i].Timestamp.Before(a[j].Timestamp)
+
+}
+
+func GetActivities(ContainerId string, probeName string, timestamp string) (activities []attackerActivityDoc, err error) {
 	var e ElasticOutputClient
-	e.url = "http://main01.superprivyhosting.com:9200"
+	e.url = beego.AppConfig.String("elasticsearchurl")
 	err = e.Init()
 	if err != nil {
 		logrus.Fatalf("Unable to initializa ES client %s", err)
 	}
 	// Search with a term query
 	termQuery := elastic.NewTermQuery("containerid", ContainerId)
-	dateQuery := elastic.NewTermQuery("@timestamp", timestamp)
+	probeQuery := elastic.NewTermQuery("probe_name", probeName)
 
+	query := elastic.NewBoolQuery()
+
+	d1 := elastic.NewRangeQuery("@timestamp")
+	i, err := strconv.Atoi(timestamp)
+	if err != nil {
+		logrus.Fatal(err)
+	}
+	d1.From(i)
+
+	d1.To(i + 600000)
+	query = query.Must(termQuery).Must(probeQuery).Must(d1)
+
+	fmt.Println(query)
 	searchResult, err := e.client.Search().
 		Index("ssh_activities"). // search in index "twitter"
-		Query(termQuery).
-		Query(dateQuery).         // specify the query
+		Query(query).
 		Sort("@timestamp", true). // sort by "user" field, ascending
 		From(0).Size(10).         // take documents 0-9
 		Pretty(true).             // pretty print request and response JSON

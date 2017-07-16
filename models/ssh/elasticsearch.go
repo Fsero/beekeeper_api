@@ -9,39 +9,40 @@ import (
 )
 
 type attackerLoginAttemptDoc struct {
-	ID            string           `json:"id"`
-	Timestamp     time.Time        `json:"@timestamp"`
-	ContainerID   string           `json:"containerid"`
-	IP            string           `json:"ip"`
-	Country       string           `json:"country"`
-	Location      elastic.GeoPoint `json:"location"`
-	User          string           `json:"user"`
-	Password      string           `json:"password"`
-	Successful    bool             `json:"successful"`
-	ProbeIP       string           `json:"probe_ip"`
-	ProbeName     string           `json:"probe_name"`
-	ProbeProvider string           `json:"probe_provider"`
-	ProbeLocation elastic.GeoPoint `json:"probe_provider_location"`
+	//ID          string           `json:"id"`
+	Timestamp   time.Time        `json:"@timestamp"`
+	ContainerID string           `json:"containerid"`
+	IP          string           `json:"ip"`
+	Country     string           `json:"country"`
+	Location    elastic.GeoPoint `json:"location"`
+	User        string           `json:"user"`
+	Password    string           `json:"password"`
+	Successful  bool             `json:"successful"`
+	//ProbeIP       string           `json:"probe_ip"`
+	//ProbeName     string           `json:"probe_name"`
+	//ProbeProvider string           `json:"probe_provider"`
+	//ProbeLocation elastic.GeoPoint `json:"probe_provider_location"`
 }
 
 type attackerActivityDoc struct {
-	ID            string           `json:"id"`
-	Timestamp     time.Time        `json:"@timestamp"`
-	ContainerID   string           `json:"containerid"`
-	PID           string           `json:"pid"`
-	User          string           `json:"user"`
-	SourceFile    string           `json:"source"`
-	Activity      string           `json:"activity"`
-	ProbeIP       string           `json:"probe_ip"`
-	ProbeName     string           `json:"probe_name"`
-	ProbeProvider string           `json:"probe_provider"`
-	ProbeLocation elastic.GeoPoint `json:"probe_provider_location"`
+	//ID          string    `json:"id"`
+	Timestamp   time.Time `json:"@timestamp"`
+	ContainerID string    `json:"containerid"`
+	PID         string    `json:"pid"`
+	User        string    `json:"user"`
+	//SourceFile  string    `json:"source"`
+	Activity string `json:"activity"`
+	//ProbeIP       string           `json:"probe_ip"`
+	//ProbeName     string           `json:"probe_name"`
+	//ProbeProvider string           `json:"probe_provider"`
+	//ProbeLocation elastic.GeoPoint `json:"probe_provider_location"`
 }
 
 type alertDoc struct {
 	ID        string    `json:"id"`
 	Timestamp time.Time `json:"@timestamp"`
 	Message   string    `json:"msg"`
+	Raw       string    `json:"message"`
 	Rule      string    `json:"rule"`
 	Source    string    `json:"source"`
 }

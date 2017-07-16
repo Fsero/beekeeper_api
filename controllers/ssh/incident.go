@@ -1,6 +1,8 @@
 package controllers
 
 import (
+	"sort"
+
 	"bitbucket.org/fseros/beekeeper_api/models/ssh"
 
 	"github.com/astaxie/beego"
@@ -51,6 +53,16 @@ func (o *IncidentController) Get() {
 // @router / [get]
 func (o *IncidentController) GetAll() {
 	obs := models.GetAllIncidents()
-	o.Data["json"] = obs
+	var keys []string
+	for k := range obs {
+		keys = append(keys, k)
+	}
+	sort.Sort(sort.Reverse(sort.StringSlice(keys)))
+	var values []models.Incident
+	values = make([]models.Incident, 0)
+	for _, k := range keys {
+		values = append(values, *(obs[k]))
+	}
+	o.Data["json"] = values
 	o.ServeJSON()
 }
