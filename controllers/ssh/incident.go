@@ -18,6 +18,11 @@ type IncidentController struct {
 	beego.Controller
 }
 
+type IncidentResponse struct {
+	GeneratedAt time.Time          `json:"generatedat"`
+	Incidents   *[]models.Incident `json:"incidents"`
+}
+
 // @Title GetIncidents
 // @Description get all objects
 // @Success 200 {object} []models.Incident
@@ -70,7 +75,10 @@ func (o *IncidentController) GetIncidents() {
 		for _, k := range keys {
 			values = append(values, *(obs[k]))
 		}
-		o.Data["json"] = values
+		response := IncidentResponse{}
+		response.GeneratedAt = time.Now()
+		response.Incidents = &values
+		o.Data["json"] = &response
 		o.ServeJSON()
 	} else {
 		o.Data["json"] = fmt.Sprintf("{ 'msg': '%s' }", err.Error())
