@@ -84,6 +84,7 @@ func getIncidents(searchResult *elastic.SearchResult) (map[string]*Incident, err
 			if len(matches) > 0 {
 				containerID := matches[2]
 				stringSlice := strings.Split(t.Source, "/")
+				//TODO: DNS name should be configurable.
 				probeName := fmt.Sprintf("%s.superprivyhosting.com", stringSlice[3])
 				probes, err := helpers.GetProbe(probeName)
 				var probe helpers.Probe
